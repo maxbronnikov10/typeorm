@@ -4,6 +4,7 @@
 export type DatabaseType =
     | "mysql"
     | "postgres"
+    | "postgresjs"
     | "cockroachdb"
     | "sap"
     | "mariadb"
