@@ -1,4 +1,3 @@
-import { ObjectLiteral } from "../../common/ObjectLiteral"
 import { TypeORMError } from "../../error"
 import { QueryFailedError } from "../../error/QueryFailedError"
 import { QueryRunnerAlreadyReleasedError } from "../../error/QueryRunnerAlreadyReleasedError"
@@ -7,7 +6,6 @@ import { ReadStream } from "../../platform/PlatformTools"
 import { BaseQueryRunner } from "../../query-runner/BaseQueryRunner"
 import { QueryResult } from "../../query-runner/QueryResult"
 import { QueryRunner } from "../../query-runner/QueryRunner"
-import { TableIndexOptions } from "../../schema-builder/options/TableIndexOptions"
 import { Table } from "../../schema-builder/table/Table"
 import { TableCheck } from "../../schema-builder/table/TableCheck"
 import { TableColumn } from "../../schema-builder/table/TableColumn"
@@ -18,12 +16,7 @@ import { TableUnique } from "../../schema-builder/table/TableUnique"
 import { View } from "../../schema-builder/view/View"
 import { Broadcaster } from "../../subscriber/Broadcaster"
 import { BroadcasterResult } from "../../subscriber/BroadcasterResult"
-import { InstanceChecker } from "../../util/InstanceChecker"
-import { OrmUtils } from "../../util/OrmUtils"
-import { VersionUtils } from "../../util/VersionUtils"
-import { DriverUtils } from "../DriverUtils"
 import { Query } from "../Query"
-import { ColumnType } from "../types/ColumnTypes"
 import { IsolationLevel } from "../types/IsolationLevel"
 import { MetadataTableType } from "../types/MetadataTableType"
 import { ReplicationMode } from "../types/ReplicationMode"
@@ -646,5 +639,26 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     private makeFkRemovalSql(tbl: Table | string, fk: TableForeignKey): Query {
         const path = this.getTablePath(tbl)
         return new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${fk.name}"`)
+    }
+
+    async clearDatabase(): Promise<void> {
+        // TODO: Implement clearDatabase for PostgresJS
+        throw new TypeORMError("clearDatabase not yet implemented for PostgresJS driver")
+    }
+
+    async changeTableComment(
+        tableOrName: Table | string,
+        comment?: string
+    ): Promise<void> {
+        // TODO: Implement changeTableComment for PostgresJS
+        throw new TypeORMError("changeTableComment not yet implemented for PostgresJS driver")
+    }
+
+    async updatePrimaryKeys(
+        tableOrName: Table | string,
+        columns: TableColumn[]
+    ): Promise<void> {
+        // TODO: Implement updatePrimaryKeys for PostgresJS
+        throw new TypeORMError("updatePrimaryKeys not yet implemented for PostgresJS driver")
     }
 }
