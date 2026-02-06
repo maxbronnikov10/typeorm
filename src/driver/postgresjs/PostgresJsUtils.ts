@@ -35,11 +35,7 @@ export class PostgresJsUtils {
 
         // Handle password (can be function or string)
         if (credentials.password) {
-            if (typeof credentials.password === "function") {
-                config.pass = credentials.password
-            } else {
-                config.pass = credentials.password
-            }
+            config.pass = credentials.password
         }
 
         return config

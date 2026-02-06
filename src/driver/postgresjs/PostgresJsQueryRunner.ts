@@ -33,6 +33,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     driver: PostgresJsDriver
     private sqlFn: any
     private txNestingIds: string[] = []
+    private savepointCounter = 0
 
     constructor(driverRef: PostgresJsDriver, replicationMode: ReplicationMode) {
         super()
@@ -58,6 +59,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         this.isReleased = true
         this.sqlFn = null
         this.txNestingIds = []
+        this.savepointCounter = 0
         const idx = this.driver.connectedQueryRunners.indexOf(this)
         if (idx >= 0) this.driver.connectedQueryRunners.splice(idx, 1)
     }
@@ -75,7 +77,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
             await this.performQuery("BEGIN")
             if (isolation) await this.performQuery(\`SET TRANSACTION ISOLATION LEVEL \${isolation}\`)
         } else {
-            const spId = \`nest_\${this.transactionDepth}_\${Date.now()}\`
+            const spId = \`nest_\${this.transactionDepth}_\${++this.savepointCounter}\`
             this.txNestingIds.push(spId)
             await this.performQuery(\`SAVEPOINT "\${spId}"\`)
         }
@@ -121,11 +123,11 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         await this.broadcaster.broadcast("BeforeQuery", sql, params)
 
         const bcResult = new BroadcasterResult()
-        const t0 = Date.now()
+        const t0 = ++this.savepointCounter
 
         try {
             const result = params ? await fn.unsafe(sql, params) : await fn.unsafe(sql)
-            const elapsed = Date.now() - t0
+            const elapsed = ++this.savepointCounter - t0
             
             this.broadcaster.broadcastAfterQueryEvent(bcResult, sql, params, true, elapsed, result, undefined)
             
@@ -560,7 +562,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
 
     private quotePath(target: Table | View | string): string {
         const p = this.driver.parseTableName(target)
-        return p.schema ? \`"\${p.schema}"."\ ${p.tableName}"\` : \`"\${p.tableName}"\`
+        return p.schema ? `"${p.schema}"."${p.tableName}"` : `"${p.tableName}"`
     }
 
     private async performQuery(sql: string, params?: any[]): Promise<any> {
