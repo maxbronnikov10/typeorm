@@ -75,11 +75,11 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
 
         if (this.transactionDepth === 0) {
             await this.performQuery("BEGIN")
-            if (isolation) await this.performQuery(\`SET TRANSACTION ISOLATION LEVEL \${isolation}\`)
+            if (isolation) await this.performQuery(`SET TRANSACTION ISOLATION LEVEL ${isolation}`)
         } else {
-            const spId = \`nest_\${this.transactionDepth}_\${++this.savepointCounter}\`
+            const spId = `nest_${this.transactionDepth}_${++this.savepointCounter}`
             this.txNestingIds.push(spId)
-            await this.performQuery(\`SAVEPOINT "\${spId}"\`)
+            await this.performQuery(`SAVEPOINT "${spId}"`)
         }
         this.transactionDepth++
         await this.broadcaster.broadcast("AfterTransactionStart")
@@ -94,7 +94,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
             this.isTransactionActive = false
         } else {
             const spId = this.txNestingIds.pop()
-            if (spId) await this.performQuery(\`RELEASE SAVEPOINT "\${spId}"\`)
+            if (spId) await this.performQuery(`RELEASE SAVEPOINT "${spId}"`)
         }
         this.transactionDepth--
         await this.broadcaster.broadcast("AfterTransactionCommit")
@@ -109,7 +109,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
             this.isTransactionActive = false
         } else {
             const spId = this.txNestingIds.pop()
-            if (spId) await this.performQuery(\`ROLLBACK TO SAVEPOINT "\${spId}"\`)
+            if (spId) await this.performQuery(`ROLLBACK TO SAVEPOINT "${spId}"`)
         }
         this.transactionDepth--
         await this.broadcaster.broadcast("AfterTransactionRollback")
@@ -199,25 +199,25 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     async createDatabase(name: string, ifNotExist?: boolean): Promise<void> {
         if (ifNotExist && await this.hasDatabase(name)) return
         await this.executeQueries(
-            new Query(\`CREATE DATABASE "\${name}"\`),
-            new Query(\`DROP DATABASE "\${name}"\`)
+            new Query(`CREATE DATABASE "${name}"`),
+            new Query(`DROP DATABASE "${name}"`)
         )
     }
 
     async dropDatabase(name: string, ifExist?: boolean): Promise<void> {
-        const sql = ifExist ? \`DROP DATABASE IF EXISTS "\${name}"\` : \`DROP DATABASE "\${name}"\`
+        const sql = ifExist ? `DROP DATABASE IF EXISTS "${name}"` : `DROP DATABASE "${name}"`
         await this.executeQueries(
             new Query(sql),
-            new Query(\`CREATE DATABASE "\${name}"\`)
+            new Query(`CREATE DATABASE "${name}"`)
         )
     }
 
     async createSchema(path: string, ifNotExist?: boolean): Promise<void> {
         const name = path.indexOf(".") === -1 ? path : path.split(".")[0]
-        const sql = ifNotExist ? \`CREATE SCHEMA IF NOT EXISTS "\${name}"\` : \`CREATE SCHEMA "\${name}"\`
+        const sql = ifNotExist ? `CREATE SCHEMA IF NOT EXISTS "${name}"` : `CREATE SCHEMA "${name}"`
         await this.executeQueries(
             new Query(sql),
-            new Query(\`DROP SCHEMA "\${name}" CASCADE\`)
+            new Query(`DROP SCHEMA "${name}" CASCADE`)
         )
     }
 
@@ -226,8 +226,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const cascStr = cascade ? " CASCADE" : ""
         const existStr = ifExist ? " IF EXISTS" : ""
         await this.executeQueries(
-            new Query(\`DROP SCHEMA\${existStr} "\${name}"\${cascStr}\`),
-            new Query(\`CREATE SCHEMA "\${name}"\`)
+            new Query(`DROP SCHEMA${existStr} "${name}"${cascStr}`),
+            new Query(`CREATE SCHEMA "${name}"`)
         )
     }
 
@@ -238,7 +238,7 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const downs: Query[] = []
         
         ups.push(this.makeTableCreationSql(tbl))
-        downs.push(new Query(\`DROP TABLE \${this.quotePath(tbl)}\`))
+        downs.push(new Query(`DROP TABLE ${this.quotePath(tbl)}`))
         
         if (createFks !== false && tbl.foreignKeys.length > 0) {
             tbl.foreignKeys.forEach(fk => {
@@ -261,24 +261,24 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const existStr = ifExist ? " IF EXISTS" : ""
         await this.executeQueries(
-            new Query(\`DROP TABLE\${existStr} \${path} CASCADE\`),
-            new Query(\`CREATE TABLE \${path} ()\`)
+            new Query(`DROP TABLE${existStr} ${path} CASCADE`),
+            new Query(`CREATE TABLE ${path} ()`)
         )
     }
 
     async createView(v: View, sync?: boolean, oldV?: View, rev?: boolean): Promise<void> {
         const matStr = v.materialized ? "MATERIALIZED " : ""
         await this.executeQueries(
-            new Query(\`CREATE \${matStr}VIEW \${this.quotePath(v)} AS \${v.expression}\`),
-            new Query(\`DROP \${matStr}VIEW \${this.quotePath(v)}\`)
+            new Query(`CREATE ${matStr}VIEW ${this.quotePath(v)} AS ${v.expression}`),
+            new Query(`DROP ${matStr}VIEW ${this.quotePath(v)}`)
         )
     }
 
     async dropView(v: View | string): Promise<void> {
         const path = this.getTablePath(v)
         await this.executeQueries(
-            new Query(\`DROP VIEW \${path}\`),
-            new Query(\`CREATE VIEW \${path} AS SELECT 1\`)
+            new Query(`DROP VIEW ${path}`),
+            new Query(`CREATE VIEW ${path} AS SELECT 1`)
         )
     }
 
@@ -286,8 +286,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const oldPath = this.getTablePath(old)
         const neuPath = this.getTablePath(neu)
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${oldPath} RENAME TO \${neuPath}\`),
-            new Query(\`ALTER TABLE \${neuPath} RENAME TO \${oldPath}\`)
+            new Query(`ALTER TABLE ${oldPath} RENAME TO ${neuPath}`),
+            new Query(`ALTER TABLE ${neuPath} RENAME TO ${oldPath}`)
         )
     }
 
@@ -295,8 +295,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const def = this.makeColumnDef(col)
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} ADD COLUMN \${def}\`),
-            new Query(\`ALTER TABLE \${path} DROP COLUMN "\${col.name}"\`)
+            new Query(`ALTER TABLE ${path} ADD COLUMN ${def}`),
+            new Query(`ALTER TABLE ${path} DROP COLUMN "${col.name}"`)
         )
     }
 
@@ -309,8 +309,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const oldN = typeof old === "string" ? old : old.name
         const neuN = typeof neu === "string" ? neu : neu.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} RENAME COLUMN "\${oldN}" TO "\${neuN}"\`),
-            new Query(\`ALTER TABLE \${path} RENAME COLUMN "\${neuN}" TO "\${oldN}"\`)
+            new Query(`ALTER TABLE ${path} RENAME COLUMN "${oldN}" TO "${neuN}"`),
+            new Query(`ALTER TABLE ${path} RENAME COLUMN "${neuN}" TO "${oldN}"`)
         )
     }
 
@@ -320,13 +320,13 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const downs: Query[] = []
         
         if (old.type !== neu.type) {
-            ups.push(new Query(\`ALTER TABLE \${path} ALTER COLUMN "\${neu.name}" TYPE \${neu.type}\`))
-            downs.push(new Query(\`ALTER TABLE \${path} ALTER COLUMN "\${old.name}" TYPE \${old.type}\`))
+            ups.push(new Query(`ALTER TABLE ${path} ALTER COLUMN "${neu.name}" TYPE ${neu.type}`))
+            downs.push(new Query(`ALTER TABLE ${path} ALTER COLUMN "${old.name}" TYPE ${old.type}`))
         }
         
         if (old.isNullable !== neu.isNullable) {
             const nullMod = neu.isNullable ? "DROP NOT NULL" : "SET NOT NULL"
-            ups.push(new Query(\`ALTER TABLE \${path} ALTER COLUMN "\${neu.name}" \${nullMod}\`))
+            ups.push(new Query(`ALTER TABLE ${path} ALTER COLUMN "${neu.name}" ${nullMod}`))
         }
         
         await this.executeQueries(ups, downs)
@@ -342,8 +342,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const name = typeof col === "string" ? col : col.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP COLUMN "\${name}"\`),
-            new Query(\`ALTER TABLE \${path} ADD COLUMN "\${name}" integer\`)
+            new Query(`ALTER TABLE ${path} DROP COLUMN "${name}"`),
+            new Query(`ALTER TABLE ${path} ADD COLUMN "${name}" integer`)
         )
     }
 
@@ -354,10 +354,10 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     async createPrimaryKey(tbl: Table | string, cols: string[], name?: string): Promise<void> {
         const path = this.getTablePath(tbl)
         const pkName = name || this.connection.namingStrategy.primaryKeyName(tbl, cols)
-        const colList = cols.map(n => \`"\${n}"\`).join(", ")
+        const colList = cols.map(n => `"${n}"`).join(", ")
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${pkName}" PRIMARY KEY (\${colList})\`),
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${pkName}"\`)
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${pkName}" PRIMARY KEY (${colList})`),
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${pkName}"`)
         )
     }
 
@@ -365,19 +365,19 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const t = typeof tbl === "string" ? await this.getCachedTable(tbl) : tbl
         const pkName = t.primaryColumns[0]?.primaryKeyConstraintName
-        if (!pkName) throw new TypeORMError(\`PK constraint name not found for \${path}\`)
+        if (!pkName) throw new TypeORMError(`PK constraint name not found for ${path}`)
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${pkName}"\`),
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${pkName}" PRIMARY KEY ()\`)
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${pkName}"`),
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${pkName}" PRIMARY KEY ()`)
         )
     }
 
     async createUniqueConstraint(tbl: Table | string, uniq: TableUnique): Promise<void> {
         const path = this.getTablePath(tbl)
-        const colList = uniq.columnNames.map(n => \`"\${n}"\`).join(", ")
+        const colList = uniq.columnNames.map(n => `"${n}"`).join(", ")
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${uniq.name}" UNIQUE (\${colList})\`),
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${uniq.name}"\`)
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${uniq.name}" UNIQUE (${colList})`),
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${uniq.name}"`)
         )
     }
 
@@ -389,8 +389,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const name = typeof uniq === "string" ? uniq : uniq.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${name}"\`),
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${name}" UNIQUE ()\`)
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${name}"`),
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${name}" UNIQUE ()`)
         )
     }
 
@@ -401,8 +401,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     async createCheckConstraint(tbl: Table | string, chk: TableCheck): Promise<void> {
         const path = this.getTablePath(tbl)
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${chk.name}" CHECK (\${chk.expression})\`),
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${chk.name}"\`)
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${chk.name}" CHECK (${chk.expression})`),
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${chk.name}"`)
         )
     }
 
@@ -414,8 +414,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const name = typeof chk === "string" ? chk : chk.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${name}"\`),
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${name}" CHECK (true)\`)
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${name}"`),
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${name}" CHECK (true)`)
         )
     }
 
@@ -426,8 +426,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     async createExclusionConstraint(tbl: Table | string, excl: TableExclusion): Promise<void> {
         const path = this.getTablePath(tbl)
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${excl.name}" EXCLUDE \${excl.expression}\`),
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${excl.name}"\`)
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${excl.name}" EXCLUDE ${excl.expression}`),
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${excl.name}"`)
         )
     }
 
@@ -439,8 +439,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const name = typeof excl === "string" ? excl : excl.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${name}"\`),
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${name}" EXCLUDE USING gist (id WITH =)\`)
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${name}"`),
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${name}" EXCLUDE USING gist (id WITH =)`)
         )
     }
 
@@ -463,8 +463,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const path = this.getTablePath(tbl)
         const name = typeof fk === "string" ? fk : fk.name
         await this.executeQueries(
-            new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${name}"\`),
-            new Query(\`ALTER TABLE \${path} ADD CONSTRAINT "\${name}" FOREIGN KEY () REFERENCES dummy()\`)
+            new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${name}"`),
+            new Query(`ALTER TABLE ${path} ADD CONSTRAINT "${name}" FOREIGN KEY () REFERENCES dummy()`)
         )
     }
 
@@ -486,8 +486,8 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     async dropIndex(tbl: Table | string, idx: TableIndex | string): Promise<void> {
         const name = typeof idx === "string" ? idx : idx.name
         await this.executeQueries(
-            new Query(\`DROP INDEX "\${name}"\`),
-            new Query(\`CREATE INDEX "\${name}" ON dummy (id)\`)
+            new Query(`DROP INDEX "${name}"`),
+            new Query(`CREATE INDEX "${name}" ON dummy (id)`)
         )
     }
 
@@ -496,25 +496,25 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     }
 
     async clearTable(name: string): Promise<void> {
-        await this.performQuery(\`TRUNCATE TABLE \${this.quotePath(name)}\`)
+        await this.performQuery(`TRUNCATE TABLE ${this.quotePath(name)}`)
     }
 
     protected async loadViews(names?: string[]): Promise<View[]> {
         const sch = await this.getCurrentSchema()
         const filter = names ? names.map(n => {
             const p = this.driver.parseTableName(n)
-            return \`(t.schema = '\${p.schema || sch}' AND t.name = '\${p.tableName}')\`
+            return `(t.schema = '${p.schema || sch}' AND t.name = '${p.tableName}')`
         }).join(" OR ") : ""
         
         const metaTbl = this.getTypeormMetadataTableName()
-        const where = filter ? \` AND (\${filter})\` : ""
+        const where = filter ? ` AND (${filter})` : ""
         
-        const sql = \`
-            SELECT t.* FROM \${metaTbl} t
+        const sql = `
+            SELECT t.* FROM ${metaTbl} t
             INNER JOIN pg_catalog.pg_class c ON c.relname = t.name
             INNER JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = t.schema
-            WHERE t.type IN ('\${MetadataTableType.VIEW}', '\${MetadataTableType.MATERIALIZED_VIEW}')\${where}
-        \`
+            WHERE t.type IN ('${MetadataTableType.VIEW}', '${MetadataTableType.MATERIALIZED_VIEW}')${where}
+        `
         
         const rows = await this.performQuery(sql)
         return rows.map((r: any) => {
@@ -537,11 +537,11 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         if (names) {
             filter = " WHERE " + names.map(n => {
                 const p = this.driver.parseTableName(n)
-                return \`(table_schema = '\${p.schema || sch}' AND table_name = '\${p.tableName}')\`
+                return `(table_schema = '${p.schema || sch}' AND table_name = '${p.tableName}')`
             }).join(" OR ")
         }
         
-        const sql = \`SELECT table_schema, table_name FROM information_schema.tables\${filter}\`
+        const sql = `SELECT table_schema, table_name FROM information_schema.tables${filter}`
         const rows = await this.performQuery(sql)
         
         if (rows.length === 0) return []
@@ -597,11 +597,11 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
     }
 
     private makeColumnDef(col: TableColumn): string {
-        let def = \`"\${col.name}" \${col.type}\`
-        if (col.length) def += \`(\${col.length})\`
+        let def = `"${col.name}" ${col.type}`
+        if (col.length) def += `(${col.length})`
         if (col.isNullable !== true) def += " NOT NULL"
-        if (col.default !== undefined) def += \` DEFAULT \${col.default}\`
-        if (col.isGenerated && col.generationStrategy === "increment") def = \`"\${col.name}" SERIAL\`
+        if (col.default !== undefined) def += ` DEFAULT ${col.default}`
+        if (col.isGenerated && col.generationStrategy === "increment") def = `"${col.name}" SERIAL`
         return def
     }
 
@@ -609,42 +609,42 @@ export class PostgresJsQueryRunner extends BaseQueryRunner implements QueryRunne
         const cols = tbl.columns.map(c => this.makeColumnDef(c))
         
         if (tbl.primaryColumns.length > 0) {
-            const pkCols = tbl.primaryColumns.map(c => \`"\${c.name}"\`).join(", ")
+            const pkCols = tbl.primaryColumns.map(c => `"${c.name}"`).join(", ")
             const pkName = tbl.primaryColumns[0].primaryKeyConstraintName ||
                 this.connection.namingStrategy.primaryKeyName(tbl, tbl.primaryColumns.map(c => c.name))
-            cols.push(\`CONSTRAINT "\${pkName}" PRIMARY KEY (\${pkCols})\`)
+            cols.push(`CONSTRAINT "${pkName}" PRIMARY KEY (${pkCols})`)
         }
         
-        return new Query(\`CREATE TABLE \${this.quotePath(tbl)} (\${cols.join(", ")})\`)
+        return new Query(`CREATE TABLE ${this.quotePath(tbl)} (${cols.join(", ")})`)
     }
 
     private makeIndexCreationSql(tbl: Table | string, idx: TableIndex): Query {
         const path = this.getTablePath(tbl)
-        const cols = idx.columnNames.map(n => \`"\${n}"\`).join(", ")
+        const cols = idx.columnNames.map(n => `"${n}"`).join(", ")
         const uniq = idx.isUnique ? "UNIQUE " : ""
-        const where = idx.where ? \` WHERE \${idx.where}\` : ""
-        return new Query(\`CREATE \${uniq}INDEX "\${idx.name}" ON \${path} (\${cols})\${where}\`)
+        const where = idx.where ? ` WHERE ${idx.where}` : ""
+        return new Query(`CREATE ${uniq}INDEX "${idx.name}" ON ${path} (${cols})${where}`)
     }
 
     private makeIndexRemovalSql(idx: TableIndex): Query {
-        return new Query(\`DROP INDEX "\${idx.name}"\`)
+        return new Query(`DROP INDEX "${idx.name}"`)
     }
 
     private makeFkAdditionSql(tbl: Table | string, fk: TableForeignKey): Query {
         const path = this.getTablePath(tbl)
-        const cols = fk.columnNames.map(n => \`"\${n}"\`).join(", ")
-        const refCols = fk.referencedColumnNames.map(n => \`"\${n}"\`).join(", ")
+        const cols = fk.columnNames.map(n => `"${n}"`).join(", ")
+        const refCols = fk.referencedColumnNames.map(n => `"${n}"`).join(", ")
         const refPath = this.getTablePath(fk.referencedTableName)
         
-        let sql = \`ALTER TABLE \${path} ADD CONSTRAINT "\${fk.name}" FOREIGN KEY (\${cols}) REFERENCES \${refPath} (\${refCols})\`
-        if (fk.onDelete) sql += \` ON DELETE \${fk.onDelete}\`
-        if (fk.onUpdate) sql += \` ON UPDATE \${fk.onUpdate}\`
+        let sql = `ALTER TABLE ${path} ADD CONSTRAINT "${fk.name}" FOREIGN KEY (${cols}) REFERENCES ${refPath} (${refCols})`
+        if (fk.onDelete) sql += ` ON DELETE ${fk.onDelete}`
+        if (fk.onUpdate) sql += ` ON UPDATE ${fk.onUpdate}`
         
         return new Query(sql)
     }
 
     private makeFkRemovalSql(tbl: Table | string, fk: TableForeignKey): Query {
         const path = this.getTablePath(tbl)
-        return new Query(\`ALTER TABLE \${path} DROP CONSTRAINT "\${fk.name}"\`)
+        return new Query(`ALTER TABLE ${path} DROP CONSTRAINT "${fk.name}"`)
     }
 }
