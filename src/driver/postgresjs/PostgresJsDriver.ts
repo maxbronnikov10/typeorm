@@ -13,7 +13,6 @@ import { TableIndexTypes } from "../../schema-builder/options/TableIndexTypes"
 import { TableColumn } from "../../schema-builder/table/TableColumn"
 import { Table } from "../../schema-builder/table/Table"
 import { TableForeignKey } from "../../schema-builder/table/TableForeignKey"
-import { TableIndex } from "../../schema-builder/table/TableIndex"
 import { View } from "../../schema-builder/view/View"
 import { ApplyValueTransformers } from "../../util/ApplyValueTransformers"
 import { DateUtils } from "../../util/DateUtils"
@@ -259,7 +258,7 @@ export class PostgresJsDriver implements Driver {
         }
 
         this.connection = datasource
-        this.options = datasource.options as PostgresJsConnectionOptions
+        this.options = datasource.options as unknown as PostgresJsConnectionOptions
         this.isReplicated = this.options.replication ? true : false
 
         if (this.options.useUTC) {
@@ -615,6 +614,55 @@ export class PostgresJsDriver implements Driver {
 
     escape(columnName: string): string {
         return '"' + columnName + '"'
+    }
+
+    parseTableName(
+        target: EntityMetadata | Table | View | TableForeignKey | string,
+    ): { database?: string; schema?: string; tableName: string } {
+        const driverDatabase = this.database
+        const driverSchema = this.schema
+
+        if (InstanceChecker.isTable(target) || InstanceChecker.isView(target)) {
+            const parsed = this.parseTableName(target.name)
+
+            return {
+                database: target.database || parsed.database || driverDatabase,
+                schema: target.schema || parsed.schema || driverSchema,
+                tableName: parsed.tableName,
+            }
+        }
+
+        if (InstanceChecker.isTableForeignKey(target)) {
+            const parsed = this.parseTableName(target.referencedTableName)
+
+            return {
+                database:
+                    target.referencedDatabase ||
+                    parsed.database ||
+                    driverDatabase,
+                schema:
+                    target.referencedSchema || parsed.schema || driverSchema,
+                tableName: parsed.tableName,
+            }
+        }
+
+        if (InstanceChecker.isEntityMetadata(target)) {
+            // EntityMetadata tableName is never a path
+
+            return {
+                database: target.database || driverDatabase,
+                schema: target.schema || driverSchema,
+                tableName: target.tableName,
+            }
+        }
+
+        const parts = target.split(".")
+
+        return {
+            database: driverDatabase,
+            schema: (parts.length > 1 ? parts[0] : undefined) || driverSchema,
+            tableName: parts.length > 1 ? parts[1] : parts[0],
+        }
     }
 
     buildTableName(tableName: string, schema?: string, database?: string): string {
@@ -1156,5 +1204,9 @@ export class PostgresJsDriver implements Driver {
     protected escapeComment(comment?: string): string | undefined {
         if (!comment) return comment
         return comment.replace(/\u0000/g, "")
+    }
+
+    isFullTextColumnTypeSupported(): boolean {
+        return false
     }
 }

@@ -71,7 +71,7 @@ export class PostgresJsUtils {
             return {
                 rows: pgJsResult,
                 rowCount: pgJsResult.length,
-                command: pgJsResult.command,
+                command: (pgJsResult as any).command,
             }
         }
         return pgJsResult
