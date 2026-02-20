@@ -317,6 +317,50 @@ jobs:
           flag-name: postgres:${{ matrix.postgres-version }}-node:${{ inputs.node-version }}
           parallel: true
 
+  postgres-js:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: ["14", "17"]
+
+    services:
+      postgres:
+        image: ghcr.io/naorpeled/typeorm-postgres:pg${{ matrix.postgres-version }}-postgis3-pgvectorv0.8.0
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: "pnpm"
+      - uses: actions/download-artifact@v6
+        with:
+          name: build
+          path: build/
+
+      - run: pnpm install
+      - run: cp .github/workflows/test/postgresjs.ormconfig.json ormconfig.json
+      - run: pnpm exec c8 pnpm run test:ci
+
+      - name: Coveralls Parallel
+        uses: coverallsapp/github-action@v2
+        with:
+          flag-name: postgres:${{ matrix.postgres-version }}-node:${{ inputs.node-version }}
+          parallel: true
+
   oracle:
     runs-on: ubuntu-latest
 
