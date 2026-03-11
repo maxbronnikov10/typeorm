@@ -10,6 +10,7 @@ import { NativescriptDriver } from "./nativescript/NativescriptDriver"
 import { SqljsDriver } from "./sqljs/SqljsDriver"
 import { MysqlDriver } from "./mysql/MysqlDriver"
 import { PostgresDriver } from "./postgres/PostgresDriver"
+import { PostgresJsDriver } from "./postgresjs/PostgresJsDriver"
 import { AuroraMysqlDriver } from "./aurora-mysql/AuroraMysqlDriver"
 import { AuroraPostgresDriver } from "./aurora-postgres/AuroraPostgresDriver"
 import { Driver } from "./Driver"
@@ -36,6 +37,8 @@ export class DriverFactory {
                 return new MysqlDriver(connection)
             case "postgres":
                 return new PostgresDriver(connection)
+            case "postgresjs":
+                return new PostgresJsDriver(connection)
             case "cockroachdb":
                 return new CockroachDriver(connection)
             case "sap":
@@ -86,6 +89,7 @@ export class DriverFactory {
                     "nativescript",
                     "oracle",
                     "postgres",
+                    "postgresjs",
                     "react-native",
                     "sap",
                     "sqlite",

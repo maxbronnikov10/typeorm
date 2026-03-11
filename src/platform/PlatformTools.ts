@@ -100,6 +100,9 @@ export class PlatformTools {
                 case "pg-query-stream":
                     return require("pg-query-stream")
 
+                case "postgres":
+                    return require("postgres")
+
                 case "typeorm-aurora-data-api-driver":
                     return require("typeorm-aurora-data-api-driver")
 
